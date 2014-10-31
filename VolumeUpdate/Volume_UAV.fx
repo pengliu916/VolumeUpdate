@@ -51,32 +51,32 @@ void GS(point GS_INPUT particles[1], uint primID : SV_PrimitiveID, inout Triangl
 
 
 //--------------------------------------------------------------------------------------
-// Pixel Shader
+// Compute Shader
 //--------------------------------------------------------------------------------------
-float4 PS(PS_INPUT input) : SV_Target
+[numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
+void CS(uint3 DTid: SV_DispatchThreadID, uint Tid : SV_GroupIndex)
 {
+	float3 Coord = DTid - voxelResolution*0.5;
 	float pi = 3.1415926;
-	float phase_x = input.Coord.x / voxelResolution.x * 3.14;
-	float phase_y = input.Coord.y / voxelResolution.y * 3.14;
-	float phase_z = input.Coord.z / voxelResolution.z * 3.14;
+	float phase_x = Coord.x / voxelResolution.x * 3.14;
+	float phase_y = Coord.y / voxelResolution.y * 3.14;
+	float phase_z = Coord.z / voxelResolution.z * 3.14;
 	float r = cos( phase_x ) * 0.5 + 0.5;
 	float g = cos( phase_y + pi / 3.0 ) * 0.5 + 0.5;
 	float b = cos( phase_z + 2.0 * pi / 3.0 ) * 0.5 + 0.5;
 
 	uint write = D3DX_FLOAT4_to_R8G8B8A8_UNORM( float4( r, g, b, 0 ));
-	g_txVolume[ input.Coord + voxelResolution/2] = write;
-
-	return float4( 0,0,0, 0 );
-	//return float4( 1,0,0, 0 );
+	g_txVolume[ Coord + voxelResolution/2] = write;
 }
-float4 PS_R(PS_INPUT input) : SV_Target
+[numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
+void CS_R(uint3 DTid: SV_DispatchThreadID, uint Tid : SV_GroupIndex)
 {
-	uint read = g_txVolume[ input.Coord + voxelResolution/2];
+	float3 Coord = DTid - voxelResolution*0.5;
+	uint read = g_txVolume[ Coord + voxelResolution/2];
 	float4 value = D3DX_R8G8B8A8_UNORM_to_FLOAT4( read );// depend on result format, choose different conversion func
 	int3 col = value * 256; 
-	col = ( col + changeSpeed*(abs(input.Coord/voxelResolution)+0.2) ) % 256;
+	col = ( col + changeSpeed*(abs(Coord/voxelResolution)+0.2) ) % 256;
 	uint write = D3DX_FLOAT4_to_R8G8B8A8_UNORM( float4( col / 256.0, 0 ));
-	g_txVolume[ input.Coord + voxelResolution/2] = write;
-	return float4( 1,0,0, 0 );
+	g_txVolume[ Coord + voxelResolution/2] = write;
 }
 
