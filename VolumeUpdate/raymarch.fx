@@ -1,8 +1,9 @@
+#include "header.h"
 Texture3D g_txVolume : register(t0);
 
 SamplerState samRaycast : register(s0);
 
-static const float density = 0.01;
+static const float density = 0.02;
 
 cbuffer cbChangesEveryFrame : register( b0 )
 {
@@ -11,7 +12,7 @@ cbuffer cbChangesEveryFrame : register( b0 )
 };
 
 // TSDF related variable
-static const float3 voxelResolution = float3(256,256,256);
+static const float3 voxelResolution = float3(VOLUME_SIZE, VOLUME_SIZE, VOLUME_SIZE);
 static const float3 boxMin = float3( -1.0, -1.0, -1.0 )*voxelResolution/2.0f;
 static const float3 boxMax = float3( 1.0, 1.0, 1.0 )*voxelResolution/2.0f;
 static const float3 reversedWidthHeightDepth = 1.0f/(voxelResolution);
@@ -173,7 +174,7 @@ float4 PS(PS_INPUT input) : SV_Target
 		float3 txCoord = P * reversedWidthHeightDepth + 0.5;
 		float4 value = g_txVolume.SampleLevel ( samRaycast, txCoord, 0 );
 		
-		output += value * density;
+		output += value * density * value.a * value.a;
 	
 		P += PsmallStep;
 		t += tSmallStep;
